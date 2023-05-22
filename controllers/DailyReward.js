@@ -8,6 +8,7 @@ const RenewalPurchasePackage = require("../Models/Renewal/RenewalPurchasePackage
 const RebuyBonus = require("../Models/Bonus/RebuyBonus")
 const ShortRecord = require("../Models/ShortRecord")
 const PurchasePackageInvoice = require("../Models/Invoice/PurchasePackageInvoice")
+const moment = require('moment');
 
 exports.homes = async (req, res) => {
   let LapWalletArr = []
@@ -243,7 +244,7 @@ exports.homes = async (req, res) => {
       }
     },
   ])
-  console.log((findPackage.map(item => item.PackageOwner)).length, "dihei")
+  // console.log((findPackage.map(item => item.PackageOwner)).length, "dihei")
 
   if (findPackage.length == 0) {
     return res.json("No user found")
@@ -260,7 +261,7 @@ exports.homes = async (req, res) => {
       // console.log("upperlineUserDatas._id ========== ---------- ", upperlineUserDatas._id)
 
       const FindPackages = findPackage[i].UpperlineUserPackageDetails
-      console.log("FindPackages ========== ---------- ", upperlineUserDatas)
+      // console.log("FindPackages ========== ---------- ", upperlineUserDatas)
 
       const Max_Caps = Number(FindPackages.PackagePrice) * 300 / 100
       var finalCals = (Number(investedAmount) * per) / 100
@@ -297,6 +298,7 @@ exports.homes = async (req, res) => {
       })
 
       const MainUserPackagePrice = findUserPackage.PackagePrice
+      const tenDaysLater = moment(findPackage[i].createdAt).add(5, 'minutes').toDate();
 
       FindMainUserReferals = await User.find({
         UpperlineUser: findMainUser,
@@ -304,10 +306,10 @@ exports.homes = async (req, res) => {
           $gte: Number(MainUserPackagePrice)
         },
         createdAt: {
-          $gte: findPackage[i].createdAt
+          $gte: findPackage[i].createdAt,
+          $lt: tenDaysLater
         }
       })
-      console.log("FindMainUserReferals ============= ", FindMainUserReferals.length)
 
       // const TotalBuy = await PurchasePackageInvoice.find({
       //   PackageOwner: findPackage[i].PackageOwner,
@@ -339,7 +341,7 @@ exports.homes = async (req, res) => {
         per = 5
 
       }
-      console.log("userLength per ============= ", per)
+      // console.log("userLength per ============= ", per)
 
       if(myOldWallet?.PreviousPercentage > 0) {
         if(per<1){
@@ -348,8 +350,11 @@ exports.homes = async (req, res) => {
           per = per + Number(myOldWallet?.PreviousPercentage);
         }
       }
-      console.log("userLength 11111111 ============= ", userLength, FindMainUserReferals.length, findPackage[i].PackageOwner, per, myOldWallet?.PreviousPercentage)
+      // console.log("userLength 11111111 ============= ", userLength, FindMainUserReferals.length, findPackage[i].PackageOwner, per, myOldWallet?.PreviousPercentage)
 
+      if(per>5) {
+        per = 5
+      }
 
       if (findRenewalBonus==null) {      
 
@@ -362,6 +367,8 @@ exports.homes = async (req, res) => {
       }else{
 
       }
+
+      console.log("findPackage[i].createdAt ============= ", findPackage[i].createdAt, tenDaysLater, per, userLength, myOldWallet?.PreviousPercentage)
     }
 
     // console.log("per ============= ", per)
@@ -468,7 +475,7 @@ exports.homes = async (req, res) => {
             } else if (checkUpdate == -1 && findShortRecord) {
               // console.log("findShortRecord.RebuyBonus ========  =========== ------ ", findShortRecord.RebuyBonus)
               let sum = Number((parseFloat(findShortRecord.RebuyBonus) + parseFloat(Add_Money_In_Wallet)).toFixed(2))
-              console.log("sum 1111 ========  =========== ------ ", sum, findPackage[i].PackageOwner)
+              // console.log("sum 1111 ========  =========== ------ ", sum, findPackage[i].PackageOwner)
               UpdateShortRecordArr?.push({
                 "updateOne": {
                   "filter": { "RecordOwner": upperlineUserDatas._id.toString() },
@@ -717,7 +724,7 @@ exports.homes = async (req, res) => {
 
           if (Add_Money_In_Wallet > 0) {
             // console.log("DailyBonusArr 33333333 ============= ", Add_Money_In_Wallet, findPackage[i].PackageOwner)
-            console.log("coming here")
+            // console.log("coming here")
             
             if(per == 0.3){    
               // console.log("DailyBonusArr 111111111 ============= ", Add_Money_In_Wallet, findPackage[i].PackageOwner)
@@ -1113,7 +1120,7 @@ exports.homes = async (req, res) => {
   // console.log(ShortRecordArr, "3")
   // console.log(JSON.stringify(UpdateUserDetailArr), "3")
 
-  console.log(ShortRecordArr)
+  // console.log(ShortRecordArr)
 
 
   await LapWallet.insertMany(LapWalletArr)

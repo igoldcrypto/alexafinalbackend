@@ -277,7 +277,7 @@ exports.NewMatchingBonus = async (req, res) => {
 
             const Find_User_Directs = Users.filter((e) => {
 
-                const fiveMinutesAgo = moment().subtract(5, 'minutes');
+                const fiveMinutesAgo = moment().subtract(2, 'minutes');
                 const elementDate = moment(e.createdAt);
 
                 return elementDate.isAfter(fiveMinutesAgo);
