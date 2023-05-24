@@ -38,6 +38,10 @@ const PackageHistory = new  mongoose.Schema(
       required:true,
       type: 'String'
     },
+    Type3:{
+      required:true,
+      type: 'String'
+    },
   },
   {
     timestamps: true
