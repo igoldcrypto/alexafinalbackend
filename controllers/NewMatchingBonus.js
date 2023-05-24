@@ -304,10 +304,7 @@ exports.MatchingBonus = async (req, res) => {
 
                         var combo = 0
 
-                        if (leftBusiness < rightBusiness) {
-
-                            
-                            
+                        if (leftBusiness < rightBusiness) {     
                           
                                     
                             combo = Number(leftBusiness)
