@@ -1,437 +1,460 @@
 const PackageHistory = require("../Models/History/PackageHistory")
+const PackageInvoice = require("../Models/Invoice/PurchasePackageInvoice")
 const User = require("../Models/User")
 const MatchingBonusHistory = require("../Models/History/MatchingBonusHistory")
 const ShortRecord = require("../Models/ShortRecord")
-// const EligibalPeopleForMatchingBonus = require("../Models/Bonus/MatchingBonus/EligibalPeopleForMatchingBonus")
+const moment = require('moment');
 
+exports.NewMatchingBonus = async (req, res) => {
 
-const findTotalBussiness = async (userId, totalBussinessCache) => {
-    if (userId == "null") {
-        return {
-            success: true,
-            data: {
-                leftIncome: 0,
-                rightIncome: 0,
-                totalIncome: 0,
-            },
-        };
-    }
+    var updateOps = []
 
-    if (totalBussinessCache[userId] !== undefined) return {
-        success: true,
-        data: totalBussinessCache[userId]
-    };
+    const Matching_Bonus_History_Array = [];
 
-    try {
-        let currentUser = await User.findById(userId);
+    let totalBussinessCache = {}
 
-        let leftUserId = currentUser.LeftTeamId;
-        let rightUserId = currentUser.RightTeamId;
+    const [PackageHistorys, Users, MatchingBonusHistorys, ShortRecords, PackageInvoices] = await Promise.all([
+        PackageHistory.find().lean(),
+        User.find().lean(),
+        MatchingBonusHistory.find().lean(),
+        ShortRecord.find().lean(),
+        PackageInvoice.find().lean()
+    ])
 
-        const leftIncome = await findTotalBussiness(leftUserId, totalBussinessCache);
-        if (!leftIncome.success) return leftIncome;
-
-        const rightIncome = await findTotalBussiness(rightUserId, totalBussinessCache);
-        if (!rightIncome.success) return rightIncome;
-
-        const returningIncome = {
-            leftIncome: leftIncome.data.totalIncome,
-            rightIncome: rightIncome.data.totalIncome,
-            totalIncome: leftIncome.data.totalIncome + rightIncome.data.totalIncome + currentUser.PurchasedPackagePrice,
-        };
-
-        totalBussinessCache[userId] = returningIncome;
-
-        return {
-            success: true,
-            data: returningIncome
-        };
-    }
-    catch (error) {
-        if (error instanceof Error || error instanceof MongoServerError) {
+    const findTotalBussiness = (userId, totalBussinessCache) => {
+        if (userId == "null") {
             return {
-                success: false,
-                error: error.message,
+                success: true,
+                data: {
+                    leftIncome: 0,
+                    rightIncome: 0,
+                    totalIncome: 0,
+                },
             };
         }
 
-        return {
-            success: false,
-            error: "Internal Server Error"
+        if (totalBussinessCache[userId] !== undefined) return {
+            success: true,
+            data: totalBussinessCache[userId]
         };
+
+
+        try {
+
+            let currentUser = Users.find((e) => e._id.toString() == userId.toString())
+
+
+            let leftUserId = currentUser.LeftTeamId;
+            let rightUserId = currentUser.RightTeamId;
+
+            const leftIncome = findTotalBussiness(leftUserId, totalBussinessCache);
+            if (!leftIncome.success) return leftIncome;
+
+            const rightIncome = findTotalBussiness(rightUserId, totalBussinessCache);
+            if (!rightIncome.success) return rightIncome;
+
+            const returningIncome = {
+                leftIncome: leftIncome.data.totalIncome,
+                rightIncome: rightIncome.data.totalIncome,
+                totalIncome: leftIncome.data.totalIncome + rightIncome.data.totalIncome + currentUser.PurchasedPackagePrice,
+            };
+
+            totalBussinessCache[userId] = returningIncome;
+
+            return {
+                success: true,
+                data: returningIncome
+            };
+        }
+        catch (error) {
+            if (error instanceof Error || error instanceof MongoServerError) {
+                return {
+                    success: false,
+                    error: error.message,
+                };
+            }
+
+            return {
+                success: false,
+                error: "Internal Server Error"
+            };
+        }
     }
-}
+
+    for (let index = 0; index < Users.length; index++) {
+
+        const User_Item = Users[index]._id;
+
+        const Check_If_User_Already_Own_Any_Matching_Bonus = MatchingBonusHistorys.filter((e) => e.BonusOwner == User_Item.toString())
+
+        const Find_If_User_Have_Package = PackageHistorys.filter((e) => e.PackageOwner == User_Item.toString())
+
+        if (Find_If_User_Have_Package.length == 0) continue;
+
+        if (Find_If_User_Have_Package.length > 0 && Find_If_User_Have_Package[0].Type2 == "Repurchased") {
 
 
-exports.MatchingBonus = async (req, res) => {
+            if (Check_If_User_Already_Own_Any_Matching_Bonus.length > 0) {
+            
+                const getArrayLenght = Check_If_User_Already_Own_Any_Matching_Bonus.length
+
+                var SelectSide = Check_If_User_Already_Own_Any_Matching_Bonus[getArrayLenght - 1 < 0 ? 0 : getArrayLenght - 1].SubtractedFrom
+                var subLastValue = Number(Check_If_User_Already_Own_Any_Matching_Bonus[getArrayLenght - 1 < 0 ? 0 : getArrayLenght - 1].ForwardedValue)
 
 
-    const FindAllUsers = await User.find()
+            } else {
+                var SelectSide = "Left"
+                var subLastValue = 0
+            }
 
-    const totalBussinessCache = {};
+            let User_Purchased_Package_Type3 = Find_If_User_Have_Package[0].Type3
 
-    for (let index = 0; index < FindAllUsers.length; index++) {
+            let Package_Price = Find_If_User_Have_Package[0].PackagePrice
 
-        var checkIfUserAlreadyOwnAnyMatchingBonus = await MatchingBonusHistory.findOne({ BonusOwner: FindAllUsers[index]._id })
+            const Find_User_Directs = await User.find({
+                UpperlineUser: User_Item._id,
+                createdAt: { $gte: new Date(Find_If_User_Have_Package[0].createdAt) }
+            })
 
+            if (Find_User_Directs.length !== 0) {
 
-        const FindMainUserPackage = await PackageHistory.findOne({ PackageOwner: FindAllUsers[index]._id, createdAt: { $gte: new Date((new Date().getTime() - ( 45 * 60 * 1000))) } })
+                var LeftWall = 0
+                var LeftWallId = ""
+                var RightWall = 0
+                var RightWallId = ""
 
+                for (let index = 0; index < Find_User_Directs.length; index++) {
 
-        if (FindMainUserPackage && FindMainUserPackage.Type2 == "Repurchased") {
+                    const Direct_User_Element = Find_User_Directs[index].Position;
 
-
-            if (FindMainUserPackage !== null) {
-
-                if (checkIfUserAlreadyOwnAnyMatchingBonus !== null) {
-                    var subLastValue = Number(checkIfUserAlreadyOwnAnyMatchingBonus.ForwardedValue)
-                } else {
-                    var subLastValue = 0
-                }
-
-                var PackPrice = FindMainUserPackage.PackagePrice
-
-
-
-                const findUserDirects = await User.find({
-                    UpperlineUser: FindAllUsers[index]._id,
-                    createdAt: { $gte: new Date(FindMainUserPackage.createdAt) }
-                })
-
-
-
-
-
-                if (findUserDirects.length !== 0) {
-
-                    var LeftWall = 0
-                    var LeftWallId = ""
-                    var RightWall = 0
-                    var RightWallId = ""
-
-                    for (let index = 0; index < findUserDirects.length; index++) {
-
-                        if (findUserDirects[index].Position == "Right") {
-
-                            LeftWall = LeftWall + Number(findUserDirects[index].PurchasedPackagePrice)
-                            LeftWallId = findUserDirects[index]._id
-                        }
-                        if (findUserDirects[index].Position == "Left") {
-
-                            RightWall = RightWall + Number(findUserDirects[index].PurchasedPackagePrice)
-                            RightWallId = findUserDirects[index]._id
-
-                        }
+                    if (Direct_User_Element == "Right") {
+                        LeftWall = LeftWall + Number(Find_User_Directs[index].PurchasedPackagePrice)
+                        LeftWallId = Find_User_Directs[index]._id
+                    }
+                    if (Direct_User_Element == "Left") {
+                        RightWall = RightWall + Number(Find_User_Directs[index].PurchasedPackagePrice)
+                        RightWallId = Find_User_Directs[index]._id
                     }
                 }
 
-                
-                
-                if (LeftWall >= Number(PackPrice) && RightWall >= Number(PackPrice)) {
 
-                    
+                if (LeftWall >= Number(Package_Price) && RightWall >= Number(Package_Price)) { 
 
 
-                        // const findThisUserData = await User.findById(FindAllUsers[index]._id)
+                    if (User_Purchased_Package_Type3 == "Repurchased") {
 
-                        const currentUserBussiness = await findTotalBussiness(FindAllUsers[index]._id, totalBussinessCache);
-
-                        // 
+                        let Amount_I_Need_To_Minus = 0
     
+                        const Find_My_Repurchase = PackageInvoices.filter((e)=>(e.PackageOwner).toString() == Find_User_Directs[index]._id)
+    
+                        Find_My_Repurchase.map((hit)=>{
+                            return Amount_I_Need_To_Minus = Amount_I_Need_To_Minus + Number(hit.PackagePrice)
+                        })
+
+
+                        var Latest_Left_Value_After_Deduct = LeftWall - Amount_I_Need_To_Minus
+
+                        var Latest_Right_Value_After_Deduct = RightWall - Amount_I_Need_To_Minus
+
+                        await PackageHistory.findByIdAndUpdate({_id:Find_If_User_Have_Package[0]._id},{Type3:"Basic"})
+                        
+                    }
+
+
+                    if (Latest_Left_Value_After_Deduct >= Number(Package_Price) && Latest_Right_Value_After_Deduct >= Number(Package_Price)) { 
+
+
+                        const currentUserBussiness = findTotalBussiness(User_Item, totalBussinessCache);
     
     
                         let leftBusiness = currentUserBussiness.data.leftIncome
                         let rightBusiness = currentUserBussiness.data.rightIncome
     
     
+                        if (SelectSide == "Left") {
+                            leftBusiness = Number(leftBusiness) + Number(subLastValue)
+                        } else {
+                            rightBusiness = Number(rightBusiness) + Number(subLastValue)
+                        }
     
+                        if (leftBusiness >= Number(Package_Price) && rightBusiness >= Number(Package_Price)) {
+    
+    
+    
+                          
+    
+    
+    
+    
+    
+    
+    
+    
+                            var combo = 0
+    
+    
+                            if (leftBusiness < rightBusiness) {
+    
+                                combo = Number(leftBusiness)
+                                var subtractForwardValue = rightBusiness - leftBusiness
+                                var subtracted_From_Which_Side = "Right"
+    
+                            } else if (rightBusiness < leftBusiness) {
+    
+                                combo = Number(rightBusiness)
+                                var subtractForwardValue = leftBusiness - rightBusiness
+                                var subtracted_From_Which_Side = "Left"
+    
+                            } else if (rightBusiness == leftBusiness) {
+    
+                                combo = Number(rightBusiness)
+                                var subtractForwardValue = 0
+                                var subtracted_From_Which_Side = "Left"
+    
+                            }
+    
+    
+                            /*
+                            ! FIND SHORT RECORD FOR THIS USER
+                            */
+    
+                            const Find_Short_Record = ShortRecords.filter((e) => e.RecordOwner.toString() == User_Item)
+    
+    
+                            var packPercantage = Number(combo) * 8 / 100
+    
+                            const GiveMatchingBonus = Users.filter((e) => e._id == User_Item.toString())
+                            // const GiveMatchingBonus = Users.find({_id:User_Item})
+    
+                            // const userWallet = Number(GiveMatchingBonus[0].MainWallet) + Number(packPercantage)
+    
+                            // var updateOps = Users.map(({ _id, MainWallet }) => ({
+                            //     updateOne: {
+                            //         filter: { _id: _id },
+                            //         update: { $set: { MainWallet: userWallet } }
+                            //     }
+                            // }));
+    
+    
+                            /*
+                            *! GOING TO CALCULATE MAX CAPING FOR THIS USER
+                            ! FORMULA ==> MAX I CAN EARN = 300
+                            !             CURRENT WALLET = 280 
+                            !             NEXT I WILL GET REWARD = 50 
+                            !         let Value = MAX I CAN EARN  - CURRENT WALLET
+                            !         let Reward = NEXT I WILL GET REWARD > Value ? Value : NEXT I WILL GET REWARD
+                            */
+    
+                            const Max_I_Can_Earn = Number(Package_Price) * 300 / 100  // Max I can earn
+    
+                            const My_Current_Walet = Number(GiveMatchingBonus[0].MainWallet)
+    
+                            const Future_I_Will_Get_Reward = packPercantage
+    
+                            let Reward = Max_I_Can_Earn - My_Current_Walet
+    
+                            let Final_Reward = Future_I_Will_Get_Reward > Reward ? Reward : Future_I_Will_Get_Reward
+    
+                            const userWallet = Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward)
+    
+    
+                            var updateOps = Users.map(({ _id, MainWallet }) => ({
+                                updateOne: {
+                                    filter: { _id: _id },
+                                    update: { $set: { MainWallet: userWallet } }
+                                }
+                            }));
+    
+                            // MAX CAPING DONE
+    
+                            Matching_Bonus_History_Array.push({
+                                BonusOwner: User_Item,
+                                Amount: Final_Reward,
+                                Matching: combo,
+                                Rate: "8%",
+                                ForwardedValue: subtractForwardValue,
+                                SubtractedFrom: subtracted_From_Which_Side
+                            })
+    
+                            await PackageHistory.findOneAndUpdate({ _id: Find_If_User_Have_Package[0]._id }, { Type2: "Basic" })
+                            await ShortRecord.findByIdAndUpdate({ _id: Find_Short_Record[0]._id }, { $inc: { MatcingBonus: Number(Final_Reward) } })
+    
+                        }
 
 
-                    var combo = 0
-
-                    if (leftBusiness < rightBusiness) {
-
-
-                        combo = Number(leftBusiness) + Number(subLastValue)
-                        var subtractForwardValue = rightBusiness - leftBusiness
-
-                    } else if (rightBusiness < leftBusiness) {
-
-
-                        combo = Number(rightBusiness) + Number(subLastValue)
-                        var subtractForwardValue = leftBusiness - rightBusiness
-
-                    } else if (rightBusiness == leftBusiness) {
-
-
-                        combo = Number(rightBusiness)
-                        var subtractForwardValue = 0
 
                     }
-
-                    var packPercantage = Number(combo) * 8 / 100
-
-                    const GiveMatchingBonus = await User.findById(FindAllUsers[index]._id)
-
-                    const userWallet = Number(GiveMatchingBonus.MainWallet) + Number(packPercantage)
-
-                    const ProvideMatchingBonus = await User.findByIdAndUpdate({ _id: FindAllUsers[index]._id }, { MainWallet: userWallet })
-
-                    const CreateRecord = await MatchingBonusHistory({
-                        BonusOwner: FindAllUsers[index]._id,
-                        Amount: packPercantage,
-                        Matching: combo,
-                        Rate: "8%",
-                        ForwardedValue: subtractForwardValue
-                    }).save()
-
-
-                    const findShortRecord = await ShortRecord.findOne({ RecordOwner: FindAllUsers[index]._id })
-
-
-                    if (findShortRecord) {
-
-                        let sum = Number(findShortRecord.MatcingBonus) + Number(packPercantage)
-
-                        const updateValue = await ShortRecord.findByIdAndUpdate({ _id: findShortRecord._id }, { MatcingBonus: sum })
-
-                    } else {
-
-                        const createShortRecord = await ShortRecord({
-                            RecordOwner: FindAllUsers[index]._id,
-                            MatcingBonus: packPercantage
-                        }).save()
-
-                    }
-
-
-                    await PackageHistory.findOneAndUpdate({_id:FindMainUserPackage._id},{Type2:"Basic"})
-
-
-
-
-
-
-
-
-
-
-                } else {
-
-                    
 
                 }
             }
 
-
-
-
-
-
-
         } else {
 
-            
-            if (FindMainUserPackage !== null) {
+            if (Check_If_User_Already_Own_Any_Matching_Bonus.length > 0) {
 
-                if (checkIfUserAlreadyOwnAnyMatchingBonus !== null) {
-                    var SelectSide = checkIfUserAlreadyOwnAnyMatchingBonus.SubtractedFrom
-                    var subLastValue = Number(checkIfUserAlreadyOwnAnyMatchingBonus.ForwardedValue)
-                } else {
-                    var SelectSide = "Left"
-                    var subLastValue = 0
-                }
+                const getArrayLenght = Check_If_User_Already_Own_Any_Matching_Bonus.length
 
+                var SelectSide = Check_If_User_Already_Own_Any_Matching_Bonus[getArrayLenght - 1 < 0 ? 0 : getArrayLenght - 1].SubtractedFrom
+                var subLastValue = Number(Check_If_User_Already_Own_Any_Matching_Bonus[getArrayLenght - 1 < 0 ? 0 : getArrayLenght - 1].ForwardedValue)
 
-                var PackPrice = FindMainUserPackage.PackagePrice
+            } else {
+                var SelectSide = "Left"
+                var subLastValue = 0
+            }
 
+            let Package_Price = Find_If_User_Have_Package[0].PackagePrice
 
-                const findUserDirects = await User.find({ UpperlineUser: FindAllUsers[index]._id })
+            // const Find_User_Directs = Users.filter((e) => e.UpperlineUser == User_Item._id.toString())
 
-                if (findUserDirects.length !== 0) {
+            const Find_User_Directs = Users.filter((e) => {
 
-                    var LeftWall = 0
-                    var LeftWallId = ""
-                    var RightWall = 0
-                    var RightWallId = ""
+                const fiveMinutesAgo = moment().subtract(2, 'minutes');
+                const elementDate = moment(e.createdAt);
 
-                    for (let index = 0; index < findUserDirects.length; index++) {
+                return elementDate.isAfter(fiveMinutesAgo);
+            }).filter((e) => e.UpperlineUser === User_Item._id.toString());
 
-                        if (findUserDirects[index].Position == "Right") {
+            if (Find_User_Directs.length !== 0) {
 
-                            LeftWall = LeftWall + Number(findUserDirects[index].PurchasedPackagePrice)
-                            LeftWallId = findUserDirects[index]._id
-                        }
-                        if (findUserDirects[index].Position == "Left") {
+                var LeftWall = 0
+                var LeftWallId = ""
+                var RightWall = 0
+                var RightWallId = ""
 
-                            RightWall = RightWall + Number(findUserDirects[index].PurchasedPackagePrice)
-                            RightWallId = findUserDirects[index]._id
+                for (let index = 0; index < Find_User_Directs.length; index++) {
 
-                        }
+                    const Direct_User_Element = Find_User_Directs[index].Position;
+
+                    if (Direct_User_Element == "Right") {
+                        LeftWall = LeftWall + Number(Find_User_Directs[index].PurchasedPackagePrice)
+                        LeftWallId = Find_User_Directs[index]._id
+                    }
+                    if (Direct_User_Element == "Left") {
+                        RightWall = RightWall + Number(Find_User_Directs[index].PurchasedPackagePrice)
+                        RightWallId = Find_User_Directs[index]._id
                     }
                 }
-                
-                
-                if (LeftWall >= Number(PackPrice) && RightWall >= Number(PackPrice)) {
-                    
-
-                    const currentUserBussiness = await findTotalBussiness(FindAllUsers[index]._id, totalBussinessCache);
 
 
-                    let leftBusiness = currentUserBussiness.data.leftIncome 
+                if (LeftWall >= Number(Package_Price) && RightWall >= Number(Package_Price)) {
+
+                    const currentUserBussiness = findTotalBussiness(User_Item, totalBussinessCache);
+
+
+                    let leftBusiness = currentUserBussiness.data.leftIncome
                     let rightBusiness = currentUserBussiness.data.rightIncome
 
 
-                    console.log("subLastValue => "+subLastValue)
-
                     if (SelectSide == "Left") {
+
                         leftBusiness = Number(leftBusiness) + Number(subLastValue)
 
-                    }else{
+
+                    } else {
                         rightBusiness = Number(rightBusiness) + Number(subLastValue)
 
                     }
 
-
-
-
-
-
-
-
-                    if (leftBusiness >= Number(PackPrice) && rightBusiness >= Number(PackPrice)) {
-
+                    if (leftBusiness >= Number(Package_Price) && rightBusiness >= Number(Package_Price)) {
 
                         var combo = 0
 
-                        if (leftBusiness < rightBusiness) {     
-                          
-                                    
+
+                        if (leftBusiness < rightBusiness) {
+
                             combo = Number(leftBusiness)
+
                             var subtractForwardValue = rightBusiness - leftBusiness
-
                             var subtracted_From_Which_Side = "Right"
-
-                            
-                            
-                            
-
 
 
                         } else if (rightBusiness < leftBusiness) {
 
-                            
-                            combo = Number(rightBusiness) 
-                            
-                            // combo = Number(rightBusiness) + Number(subLastValue)
 
-                            // if (SelectSide == "Left") {
-                                
-                            //     combo = Number(leftBusiness) + Number(subLastValue)
-                            //     subLastValue = 0
-                                
-                            // }else{
-                                
-                            //     subLastValue = 0
 
-                            // }
                             var subtractForwardValue = leftBusiness - rightBusiness
                             var subtracted_From_Which_Side = "Left"
-                            
+
                         } else if (rightBusiness == leftBusiness) {
-                            
-                            
 
                             combo = Number(rightBusiness)
                             var subtractForwardValue = 0
                             var subtracted_From_Which_Side = "Left"
 
-
                         }
 
                         var packPercantage = Number(combo) * 8 / 100
 
-                        const GiveMatchingBonus = await User.findById(FindAllUsers[index]._id)
+                        const GiveMatchingBonus = Users.filter((e) => e._id == User_Item.toString())
 
-                        const userWallet = Number(GiveMatchingBonus.MainWallet) + Number(packPercantage)
 
-                        const ProvideMatchingBonus = await User.findByIdAndUpdate({ _id: FindAllUsers[index]._id }, { MainWallet: userWallet })
+                        /*
+                        *! GOING TO CALCULATE MAX CAPING FOR THIS USER
+                        ! FORMULA ==> MAX I CAN EARN = 300
+                        !             CURRENT WALLET = 280 
+                        !             NEXT I WILL GET REWARD = 50 
+                        !         let Value = MAX I CAN EARN  - CURRENT WALLET
+                        !         let Reward = NEXT I WILL GET REWARD > Value ? Value : NEXT I WILL GET REWARD
+                        */
 
-                        const CreateRecord = await MatchingBonusHistory({
-                            BonusOwner: FindAllUsers[index]._id,
-                            Amount: packPercantage,
+                        const Max_I_Can_Earn = Number(Package_Price) * 300 / 100  // Max I can earn
+
+                        const My_Current_Walet = Number(GiveMatchingBonus[0].MainWallet)
+
+                        const Future_I_Will_Get_Reward = packPercantage
+
+                        let Reward = Max_I_Can_Earn - My_Current_Walet
+
+                        let Final_Reward = Future_I_Will_Get_Reward > Reward ? Reward : Future_I_Will_Get_Reward
+
+                        const userWallet = Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward)
+
+
+                        updateOps = Users.map(({ _id, MainWallet }) => ({
+                            updateOne: {
+                                filter: { _id: _id },
+                                update: { $set: { MainWallet: userWallet } }
+                            }
+                        }));
+
+                        // MAX CAPING DONE
+
+
+                        /*
+                        ! FIND SHORT RECORD FOR THIS USER
+                        */
+
+                        const Find_Short_Record = ShortRecords.filter((e) => e.RecordOwner.toString() == User_Item)
+
+                        Matching_Bonus_History_Array.push({
+                            BonusOwner: User_Item,
+                            Amount: Final_Reward,
                             Matching: combo,
                             Rate: "8%",
                             ForwardedValue: subtractForwardValue,
                             SubtractedFrom: subtracted_From_Which_Side
-                        }).save()
-
-
-
-                        /*
-                        ! SHORT RECORD WORK GOING ON BELOW
-                        */
-
-                        const findShortRecord = await ShortRecord.findOne({ RecordOwner: FindAllUsers[index]._id })
-
-
-                        if (findShortRecord) {
-
-                            let sum = Number(findShortRecord.MatcingBonus) + Number(packPercantage)
-
-                            const updateValue = await ShortRecord.findByIdAndUpdate({ _id: findShortRecord._id }, { MatcingBonus: sum })
-
-                        } else {
-
-                            const createShortRecord = await ShortRecord({
-                                RecordOwner: FindAllUsers[index]._id,
-                                MatcingBonus: packPercantage
-                            }).save()
-
-                        }
-
-
-
-
-
-
-
-
-
+                        })
+                        await ShortRecord.findByIdAndUpdate({ _id: Find_Short_Record[0]._id }, { $inc: { MatcingBonus: Number(Final_Reward) } })
 
                     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                } else {
-
-
                 }
             }
-
         }
 
     }
 
-    res.json("done")
+    
 
+    if (Matching_Bonus_History_Array.length > 0) {
+        await MatchingBonusHistory.insertMany(Matching_Bonus_History_Array)
+    }
 
+    
 
+    if (updateOps.length > 0) {
+        await User.bulkWrite(updateOps, { ordered: false })
+    }
 
-
-
-
-
+    res.json("Matching Bonus Distributed")
 
 }
