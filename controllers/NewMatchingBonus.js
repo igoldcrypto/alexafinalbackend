@@ -137,15 +137,17 @@ exports.NewMatchingBonus = async (req, res) => {
                     }
                 }
 
+                    
 
                 if (LeftWall >= Number(Package_Price) && RightWall >= Number(Package_Price)) { 
-
 
                     if (User_Purchased_Package_Type3 == "Repurchased") {
 
                         let Amount_I_Need_To_Minus = 0
-    
-                        const Find_My_Repurchase = PackageInvoices.filter((e)=>(e.PackageOwner).toString() == Find_User_Directs[index]._id)
+
+                        console.log(User_Item._id)
+                        console.log("index => "+index)
+                        const Find_My_Repurchase = PackageInvoices.filter((e)=>(e.PackageOwner).toString() == User_Item._id)
     
                         Find_My_Repurchase.map((hit)=>{
                             return Amount_I_Need_To_Minus = Amount_I_Need_To_Minus + Number(hit.PackagePrice)
