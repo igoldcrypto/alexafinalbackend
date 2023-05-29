@@ -1,5 +1,3 @@
-
-
 const PackageHistory = require("../Models/History/PackageHistory");
 const PackageInvoice = require("../Models/Invoice/PurchasePackageInvoice");
 const User = require("../Models/User");
@@ -363,14 +361,18 @@ exports.NewMatchingBonus = async (req, res) => {
               const userWallet =
                 Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward);
 
-              var updateOps = Users.map(({ _id, MainWallet }) => ({
-                updateOne: {
-                  filter: { _id: _id },
-                  update: { $set: { MainWallet: userWallet } },
-                },
-              }));
+             
 
               // MAX CAPING DONE
+
+              var I_Can_Maximum_Get = Number(Package_Price) * 300 / 100
+
+              var Flushed_Data = 0
+  
+              if (Number(Final_Reward) > I_Can_Maximum_Get) {
+               Final_Reward = I_Can_Maximum_Get
+               Flushed_Data =  Number(Final_Reward) - I_Can_Maximum_Get 
+              }              
 
               Matching_Bonus_History_Array.push({
                 BonusOwner: User_Item,
@@ -379,7 +381,16 @@ exports.NewMatchingBonus = async (req, res) => {
                 Rate: "8%",
                 ForwardedValue: subtractForwardValue,
                 SubtractedFrom: subtracted_From_Which_Side,
+                FlushCalculation:Flushed_Data
               });
+
+
+              // var updateOps = Users.map(({ _id, MainWallet }) => ({
+              //   updateOne: {
+              //     filter: { _id: _id },
+              //     update: { $set: { MainWallet: userWallet } },
+              //   },
+              // }));
 
               await PackageHistory.findOneAndUpdate(
                 { _id: Find_If_User_Have_Package[0]._id },
@@ -389,6 +400,7 @@ exports.NewMatchingBonus = async (req, res) => {
                 { _id: Find_Short_Record[0]._id },
                 { $inc: { MatcingBonus: Number(Final_Reward) } }
               );
+              
             }
           }
         }
@@ -524,15 +536,15 @@ exports.NewMatchingBonus = async (req, res) => {
                 ? Reward
                 : Future_I_Will_Get_Reward;
 
-            const userWallet =
-              Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward);
+            // const userWallet =
+              // Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward);
 
-            updateOps = Users.map(({ _id, MainWallet }) => ({
-              updateOne: {
-                filter: { _id: _id },
-                update: { $set: { MainWallet: userWallet } },
-              },
-            }));
+            // updateOps = Users.map(({ _id, MainWallet }) => ({
+            //   updateOne: {
+            //     filter: { _id: _id },
+            //     update: { $set: { MainWallet: userWallet } },
+            //   },
+            // }));
 
             // MAX CAPING DONE
 
@@ -544,6 +556,15 @@ exports.NewMatchingBonus = async (req, res) => {
               (e) => e.RecordOwner.toString() == User_Item
             );
 
+            var I_Can_Maximum_Get = Number(Package_Price) * 300 / 100
+
+            var Flushed_Data = 0
+
+            if (Number(Final_Reward) > I_Can_Maximum_Get) {
+             Final_Reward = I_Can_Maximum_Get
+             Flushed_Data =  Number(Final_Reward) - I_Can_Maximum_Get 
+            }
+
             Matching_Bonus_History_Array.push({
               BonusOwner: User_Item,
               Amount: Final_Reward,
@@ -551,6 +572,7 @@ exports.NewMatchingBonus = async (req, res) => {
               Rate: "8%",
               ForwardedValue: subtractForwardValue,
               SubtractedFrom: subtracted_From_Which_Side,
+              FlushCalculation:Flushed_Data
             });
             await ShortRecord.findByIdAndUpdate(
               { _id: Find_Short_Record[0]._id },
