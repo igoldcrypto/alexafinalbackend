@@ -183,7 +183,7 @@ exports.NewMatchingBonus = async (req, res) => {
 
         //// 
         //// 
-        //// 
+        ////  
 
         if (
           LeftWall >= Number(Package_Price) &&
@@ -410,6 +410,10 @@ exports.NewMatchingBonus = async (req, res) => {
                 await ShortRecord.findByIdAndUpdate(
                   { _id: Find_Short_Record[0]._id },
                   { $inc: { MatcingBonus: Number(Final_Reward) } }
+                );
+                await User.findByIdAndUpdate(
+                  { _id: Find_Short_Record[0].RecordOwner },
+                  { $inc: { MainWallet: Number(Final_Reward) } }
                 );
 
 
@@ -645,6 +649,10 @@ exports.NewMatchingBonus = async (req, res) => {
               await ShortRecord.findByIdAndUpdate(
                 { _id: Find_Short_Record[0]._id },
                 { $inc: { MatcingBonus: Number(Final_Reward) } }
+              );
+              await User.findByIdAndUpdate(
+                { _id: Find_Short_Record[0].RecordOwner },
+                { $inc: { MainWallet: Number(Final_Reward) } }
               );
 
 
