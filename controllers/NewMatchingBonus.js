@@ -259,8 +259,7 @@ exports.NewMatchingBonus = async (req, res) => {
            // console.log("it want not a repurchase");
           }
 
-          //// console.log("Latest_Left_Value_After_Deduct => "+Latest_Left_Value_After_Deduct)
-          //// console.log("Latest_Right_Value_After_Deduct => "+Latest_Right_Value_After_Deduct)
+  
 
           if (
             Latest_Left_Value_After_Deduct >= Number(Package_Price) &&
@@ -325,17 +324,7 @@ exports.NewMatchingBonus = async (req, res) => {
               const GiveMatchingBonus = Users.filter(
                 (e) => e._id == User_Item.toString()
               );
-              // const GiveMatchingBonus = Users.find({_id:User_Item})
-
-              // const userWallet = Number(GiveMatchingBonus[0].MainWallet) + Number(packPercantage)
-
-              // var updateOps = Users.map(({ _id, MainWallet }) => ({
-              //     updateOne: {
-              //         filter: { _id: _id },
-              //         update: { $set: { MainWallet: userWallet } }
-              //     }
-              // }));
-
+            
               /*
                             *! GOING TO CALCULATE MAX CAPING FOR THIS USER
                             ! FORMULA ==> MAX I CAN EARN = 300
@@ -374,6 +363,9 @@ exports.NewMatchingBonus = async (req, res) => {
                Flushed_Data =  Number(Final_Reward) - I_Can_Maximum_Get 
               }              
 
+
+              if (Final_Reward >= 0) {
+
               Matching_Bonus_History_Array.push({
                 BonusOwner: User_Item,
                 Amount: Final_Reward,
@@ -384,14 +376,6 @@ exports.NewMatchingBonus = async (req, res) => {
                 FlushCalculation:Flushed_Data
               });
 
-
-              // var updateOps = Users.map(({ _id, MainWallet }) => ({
-              //   updateOne: {
-              //     filter: { _id: _id },
-              //     update: { $set: { MainWallet: userWallet } },
-              //   },
-              // }));
-
               await PackageHistory.findOneAndUpdate(
                 { _id: Find_If_User_Have_Package[0]._id },
                 { Type2: "Basic" }
@@ -400,6 +384,9 @@ exports.NewMatchingBonus = async (req, res) => {
                 { _id: Find_Short_Record[0]._id },
                 { $inc: { MatcingBonus: Number(Final_Reward) } }
               );
+
+
+              }
               
             }
           }
@@ -429,14 +416,6 @@ exports.NewMatchingBonus = async (req, res) => {
       const Find_User_Directs = Users.filter(
         (e) => e.UpperlineUser == User_Item._id.toString()
       );
-
-      // const Find_User_Directs = Users.filter((e) => {
-
-      //     const fiveMinutesAgo = moment().subtract(2, 'minutes');
-      //     const elementDate = moment(e.createdAt);
-
-      //     return elementDate.isAfter(fiveMinutesAgo);
-      // }).filter((e) => e.UpperlineUser === User_Item._id.toString());
 
       if (Find_User_Directs.length !== 0) {
         var LeftWall = 0;
@@ -565,19 +544,28 @@ exports.NewMatchingBonus = async (req, res) => {
              Flushed_Data =  Number(Final_Reward) - I_Can_Maximum_Get 
             }
 
-            Matching_Bonus_History_Array.push({
-              BonusOwner: User_Item,
-              Amount: Final_Reward,
-              Matching: combo,
-              Rate: "8%",
-              ForwardedValue: subtractForwardValue,
-              SubtractedFrom: subtracted_From_Which_Side,
-              FlushCalculation:Flushed_Data
-            });
-            await ShortRecord.findByIdAndUpdate(
-              { _id: Find_Short_Record[0]._id },
-              { $inc: { MatcingBonus: Number(Final_Reward) } }
-            );
+
+            if (Final_Reward >= 0) {
+              
+
+              Matching_Bonus_History_Array.push({
+                BonusOwner: User_Item,
+                Amount: Final_Reward,
+                Matching: combo,
+                Rate: "8%",
+                ForwardedValue: subtractForwardValue,
+                SubtractedFrom: subtracted_From_Which_Side,
+                FlushCalculation:Flushed_Data
+              });
+              await ShortRecord.findByIdAndUpdate(
+                { _id: Find_Short_Record[0]._id },
+                { $inc: { MatcingBonus: Number(Final_Reward) } }
+              );
+
+
+
+            }
+
           }
         }
       }
