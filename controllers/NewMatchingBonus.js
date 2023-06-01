@@ -114,8 +114,19 @@ exports.NewMatchingBonus = async (req, res) => {
     }
   };
 
+
+
+  console.log("Lenght Of User => "+Users.length)
+
+
+
   for (let index = 0; index < Users.length; index++) {
     const User_Item = Users[index]._id;
+
+
+    console.log(Users[index]._id)
+
+    console.log("User_Item => "+User_Item)
 
     const Check_If_User_Already_Own_Any_Matching_Bonus =
       MatchingBonusHistorys.filter((e) => e.BonusOwner == User_Item.toString());
@@ -215,14 +226,11 @@ exports.NewMatchingBonus = async (req, res) => {
             // 
             // 
 
-            if (
-              Amount_I_Need_To_Minus > LeftWall ||
-              Amount_I_Need_To_Minus > RightWall
-            ) {
+            if (Amount_I_Need_To_Minus > LeftWall || Amount_I_Need_To_Minus > RightWall ) {
               console.log(
                 `Breaking This Loop For This => ${Find_If_User_Have_Package[0].PackageOwner} Because he want to deuduct ${Amount_I_Need_To_Minus} but in Left he has ${LeftWall} and in right side he has ${RightWall}.`
               );
-              break;
+              continue;
             }
 
             Latest_Left_Value_After_Deduct = LeftWall - Amount_I_Need_To_Minus;
@@ -246,7 +254,7 @@ exports.NewMatchingBonus = async (req, res) => {
               console.log(
                 `Breaking This Loop because ${Find_If_User_Have_Package[0].PackageOwner} Latest_Left_Value_After_Deduct is ${Latest_Left_Value_After_Deduct} or ${Latest_Right_Value_After_Deduct} is less/euals to 0.`
               );
-              break;
+              continue;
             }
 
             await PackageHistory.findByIdAndUpdate(
@@ -390,6 +398,7 @@ exports.NewMatchingBonus = async (req, res) => {
                 Flushed_Data = Number(Final_Reward) - I_Can_Maximum_Get
               }
 
+              console.log("Final_Reward => "+Final_Reward)
 
               if (Final_Reward >= 0) {
 
@@ -633,7 +642,7 @@ exports.NewMatchingBonus = async (req, res) => {
               Flushed_Data = Number(Final_Reward) - I_Can_Maximum_Get
             }
 
-
+            console.log("Final_Reward => "+Final_Reward)
             if (Final_Reward >= 0) {
 
 
