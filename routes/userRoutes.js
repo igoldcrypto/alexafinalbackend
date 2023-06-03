@@ -1,5 +1,6 @@
 const express = require("express")
 const { homes } = require("../controllers/DailyReward")
+const { rebuy } = require("../controllers/RebuyBonus")
 const { MatchingBonus } = require("../controllers/MatchingBonus")
 const { NewMatchingBonus } = require("../controllers/NewMatchingBonus")
 
@@ -13,6 +14,7 @@ const { CountMyLeftRightDirects } = require("../controllers/CountMyLeftRightDire
 const router = express.Router();
 
 router.get("/dailyBonus", homes)
+router.get("/rebuyBonus", rebuy)
 router.get("/matchiingBonus", MatchingBonus)
 router.get("/NewMatchingBonus", NewMatchingBonus)
 router.get("/globalBonusMonthly", GlobalBonusMonthly)
