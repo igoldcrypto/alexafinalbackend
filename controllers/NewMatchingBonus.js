@@ -27,7 +27,7 @@ exports.NewMatchingBonus = async (req, res) => {
     MatchingBonusHistory.find().lean(),
     PurchasePackageInvoice.find({
       createdAt: {
-        $gte: moment().subtract(5, "minutes").toDate(),
+        $gte: moment().subtract(1440, "minutes").toDate(),
         $lt: moment().toDate(),
       },
     }).lean(),

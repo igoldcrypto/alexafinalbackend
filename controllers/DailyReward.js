@@ -298,7 +298,7 @@ exports.homes = async (req, res) => {
       })
 
       const MainUserPackagePrice = findUserPackage.PackagePrice
-      const tenDaysLater = moment(findPackage[i].createdAt).add(60, 'minutes').toDate();
+      const tenDaysLater = moment(findPackage[i].createdAt).add(2160, 'minutes').toDate();
 
       FindMainUserReferals = await User.find({
         UpperlineUser: findMainUser,
