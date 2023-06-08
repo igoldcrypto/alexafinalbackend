@@ -72,9 +72,6 @@ exports.NewMatchingBonus = async (req, res) => {
         (currentInvoice) => (totalAmount += Number(currentInvoice.PackagePrice))
       );
 
-      //  // 
-      //   
-
       let leftUserId = currentUser?.LeftTeamId;
       let rightUserId = currentUser?.RightTeamId;
 
@@ -83,6 +80,9 @@ exports.NewMatchingBonus = async (req, res) => {
 
       const rightIncome = findTotalBussiness(rightUserId, totalBussinessCache);
       if (!rightIncome.success) return rightIncome;
+
+
+
 
       const returningIncome = {
         leftIncome: leftIncome.data.totalIncome,
@@ -116,17 +116,13 @@ exports.NewMatchingBonus = async (req, res) => {
 
 
 
-  console.log("Lenght Of User => "+Users.length)
+
 
 
 
   for (let index = 0; index < Users.length; index++) {
     const User_Item = Users[index]._id;
 
-
-    console.log(Users[index]._id)
-
-    console.log("User_Item => "+User_Item)
 
     const Check_If_User_Already_Own_Any_Matching_Bonus =
       MatchingBonusHistorys.filter((e) => e.BonusOwner == User_Item.toString());
@@ -226,7 +222,7 @@ exports.NewMatchingBonus = async (req, res) => {
             // 
             // 
 
-            if (Amount_I_Need_To_Minus > LeftWall || Amount_I_Need_To_Minus > RightWall ) {
+            if (Amount_I_Need_To_Minus > LeftWall || Amount_I_Need_To_Minus > RightWall) {
               console.log(
                 `Breaking This Loop For This => ${Find_If_User_Have_Package[0].PackageOwner} Because he want to deuduct ${Amount_I_Need_To_Minus} but in Left he has ${LeftWall} and in right side he has ${RightWall}.`
               );
@@ -238,14 +234,14 @@ exports.NewMatchingBonus = async (req, res) => {
             Latest_Right_Value_After_Deduct =
               RightWall - Amount_I_Need_To_Minus;
 
-            console.log(
-              "Latest_Left_Value_After_Deduct => " +
-              Latest_Left_Value_After_Deduct
-            );
-            console.log(
-              "Latest_Right_Value_After_Deduct => " +
-              Latest_Right_Value_After_Deduct
-            );
+            // console.log(
+            //   "Latest_Left_Value_After_Deduct => " +
+            //   Latest_Left_Value_After_Deduct
+            // );
+            // console.log(
+            //   "Latest_Right_Value_After_Deduct => " +
+            //   Latest_Right_Value_After_Deduct
+            // );
 
             if (
               Latest_Left_Value_After_Deduct <= 0 ||
@@ -283,11 +279,12 @@ exports.NewMatchingBonus = async (req, res) => {
 
 
 
+
             let leftBusiness = currentUserBussiness.data.leftIncome;
             let rightBusiness = currentUserBussiness.data.rightIncome;
 
-
-
+            
+            
 
 
             if (SelectSide == "Left") {
@@ -295,8 +292,13 @@ exports.NewMatchingBonus = async (req, res) => {
             } else {
               rightBusiness = Number(rightBusiness) + Number(subLastValue);
             }
+            
 
-
+            console.log("----------------------------------------------------------------------")
+            console.log("Left From Binary => " + leftBusiness)
+            console.log("rightBusiness From Binary => " + rightBusiness)
+            console.log(User_Item)
+            console.log("----------------------------------------------------------------------")
 
 
 
@@ -360,7 +362,7 @@ exports.NewMatchingBonus = async (req, res) => {
               const Total_Earning = All_My_Daily_Income + All_My_Power_Income + All_My_Direct_Reward + All_My_Matcing_Bonus + All_My_Rank_Eligibility + All_My_Gobal_Pool_Bonus + All_My_Rebuy_Bonus
 
 
-              console.log("Total_Earning =================> " + Total_Earning)
+
 
 
 
@@ -375,16 +377,12 @@ exports.NewMatchingBonus = async (req, res) => {
 
               const Future_I_Will_Get_Reward = packPercantage;
 
-              let Reward = Max_I_Can_Earn - My_Current_Walet;
+              let Reward = Max_I_Can_Earn - Users[index].MainWallet;
 
-              let Final_Reward =
-                Future_I_Will_Get_Reward > Reward
-                  ? Reward
-                  : Future_I_Will_Get_Reward;
+              console.log(Reward)
+              let Final_Reward = Future_I_Will_Get_Reward > Reward ? Reward : Future_I_Will_Get_Reward;
 
-              const userWallet =
-                Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward);
-
+              // const userWallet = Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward);
 
 
               // MAX CAPING DONE
@@ -398,13 +396,13 @@ exports.NewMatchingBonus = async (req, res) => {
                 Flushed_Data = Number(Final_Reward) - I_Can_Maximum_Get
               }
 
-              console.log("Final_Reward => "+Final_Reward)
 
+              // console.log("first one")
               if (Final_Reward >= 0) {
 
                 Matching_Bonus_History_Array.push({
                   BonusOwner: User_Item,
-                  Amount: Final_Reward,
+                  Amount: Final_Reward > Package_Price ? Package_Price :Final_Reward,
                   Matching: combo,
                   Rate: "8%",
                   ForwardedValue: subtractForwardValue,
@@ -418,11 +416,11 @@ exports.NewMatchingBonus = async (req, res) => {
                 );
                 await ShortRecord.findByIdAndUpdate(
                   { _id: Find_Short_Record[0]._id },
-                  { $inc: { MatcingBonus: Number(Final_Reward) } }
+                  { $inc: { MatcingBonus: Number(Final_Reward > Package_Price ? Package_Price :Final_Reward) } }
                 );
                 await User.findByIdAndUpdate(
                   { _id: Find_Short_Record[0].RecordOwner },
-                  { $inc: { MainWallet: Number(Final_Reward) } }
+                  { $inc: { MainWallet: Number(Final_Reward > Package_Price ? Package_Price :Final_Reward) } }
                 );
 
 
@@ -479,9 +477,6 @@ exports.NewMatchingBonus = async (req, res) => {
           }
         }
 
-        // 
-        // 
-        // 
 
         if (
           LeftWall >= Number(Package_Price) &&
@@ -500,11 +495,23 @@ exports.NewMatchingBonus = async (req, res) => {
 
 
 
+
+
           if (SelectSide == "Left") {
             leftBusiness = Number(leftBusiness) + Number(subLastValue);
           } else {
             rightBusiness = Number(rightBusiness) + Number(subLastValue);
           }
+
+
+          console.log("----------------------------------------------------------------------")
+          console.log("Left From Binary => " + leftBusiness)
+          console.log("rightBusiness From Binary => " + rightBusiness)
+          console.log(User_Item)
+          console.log("----------------------------------------------------------------------")
+          
+
+
 
           if (
             1 == 1
@@ -550,39 +557,39 @@ exports.NewMatchingBonus = async (req, res) => {
                         ! FIND SHORT RECORD FOR THIS USER
                         */
 
-                        const Find_Short_Record = ShortRecords.filter(
-                          (e) => e.RecordOwner.toString() == User_Item
-                        );
-            
-                        const FinalShort = Find_Short_Record[0]
-            
-            
-            
-            
-                        /*
-                      ! GET MY ALL EARNINGS
-                      */
-            
-                        const All_My_Daily_Income = FinalShort ? FinalShort.DailyStakig : 0
-                        const All_My_Power_Income = FinalShort ? FinalShort.PowerStaing : 0
-                        const All_My_Direct_Reward = FinalShort ? FinalShort.DirectReward : 0
-                        const All_My_Matcing_Bonus = FinalShort ? FinalShort.MatcingBonus : 0
-                        const All_My_Rank_Eligibility = FinalShort ? FinalShort.RankEligibility : 0
-                        const All_My_Gobal_Pool_Bonus = FinalShort ? FinalShort.GobalPoolBonus : 0
-                        const All_My_Rebuy_Bonus = FinalShort ? FinalShort.RebuyBonus : 0
-            
-                        const Total_Earning = All_My_Daily_Income + All_My_Power_Income + All_My_Direct_Reward + All_My_Matcing_Bonus + All_My_Rank_Eligibility + All_My_Gobal_Pool_Bonus + All_My_Rebuy_Bonus
-            
-            
-                        console.log("Total_Earning =================> " + Total_Earning)
-            
-            
-            
-                        /*
-                        ! GOES TILL HERE 
-                        */
-            
-            
+            const Find_Short_Record = ShortRecords.filter(
+              (e) => e.RecordOwner.toString() == User_Item
+            );
+
+            const FinalShort = Find_Short_Record[0]
+
+
+
+
+            /*
+          ! GET MY ALL EARNINGS
+          */
+
+            const All_My_Daily_Income = FinalShort ? FinalShort.DailyStakig : 0
+            const All_My_Power_Income = FinalShort ? FinalShort.PowerStaing : 0
+            const All_My_Direct_Reward = FinalShort ? FinalShort.DirectReward : 0
+            const All_My_Matcing_Bonus = FinalShort ? FinalShort.MatcingBonus : 0
+            const All_My_Rank_Eligibility = FinalShort ? FinalShort.RankEligibility : 0
+            const All_My_Gobal_Pool_Bonus = FinalShort ? FinalShort.GobalPoolBonus : 0
+            const All_My_Rebuy_Bonus = FinalShort ? FinalShort.RebuyBonus : 0
+
+            const Total_Earning = All_My_Daily_Income + All_My_Power_Income + All_My_Direct_Reward + All_My_Matcing_Bonus + All_My_Rank_Eligibility + All_My_Gobal_Pool_Bonus + All_My_Rebuy_Bonus
+
+
+
+
+
+
+            /*
+            ! GOES TILL HERE 
+            */
+
+
 
 
 
@@ -596,42 +603,12 @@ exports.NewMatchingBonus = async (req, res) => {
 
             const Future_I_Will_Get_Reward = packPercantage;
 
-            let Reward = Max_I_Can_Earn - My_Current_Walet;
+            let Reward = Max_I_Can_Earn - Users[index].MainWallet;
 
             let Final_Reward =
               Future_I_Will_Get_Reward > Reward
                 ? Reward
                 : Future_I_Will_Get_Reward;
-
-            // const userWallet =
-            // Number(GiveMatchingBonus[0].MainWallet) + Number(Final_Reward);
-
-            // updateOps = Users.map(({ _id, MainWallet }) => ({
-            //   updateOne: {
-            //     filter: { _id: _id },
-            //     update: { $set: { MainWallet: userWallet } },
-            //   },
-            // }));
-
-            // MAX CAPING DONE
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
             var I_Can_Maximum_Get = Number(Package_Price) * 300 / 100
 
@@ -642,13 +619,14 @@ exports.NewMatchingBonus = async (req, res) => {
               Flushed_Data = Number(Final_Reward) - I_Can_Maximum_Get
             }
 
-            console.log("Final_Reward => "+Final_Reward)
+            console.log(Final_Reward)
+
             if (Final_Reward >= 0) {
 
 
               Matching_Bonus_History_Array.push({
                 BonusOwner: User_Item,
-                Amount: Final_Reward,
+                Amount: Final_Reward > Package_Price ? Package_Price :Final_Reward,
                 Matching: combo,
                 Rate: "8%",
                 ForwardedValue: subtractForwardValue,
@@ -657,11 +635,11 @@ exports.NewMatchingBonus = async (req, res) => {
               });
               await ShortRecord.findByIdAndUpdate(
                 { _id: Find_Short_Record[0]._id },
-                { $inc: { MatcingBonus: Number(Final_Reward) } }
+                { $inc: { MatcingBonus: Number(Final_Reward > Package_Price ? Package_Price :Final_Reward) } }
               );
               await User.findByIdAndUpdate(
                 { _id: Find_Short_Record[0].RecordOwner },
-                { $inc: { MainWallet: Number(Final_Reward) } }
+                { $inc: { MainWallet: Number(Final_Reward > Package_Price ? Package_Price :Final_Reward) } }
               );
 
 
