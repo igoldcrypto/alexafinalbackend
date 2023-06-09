@@ -16,6 +16,34 @@ exports.GetBinaryData = async (req, res) => {
 
   let totalBussinessCache = {};
 
+  const [
+    PackageHistorys,
+    Users,
+    MatchingBonusHistorys,
+    FiveMinutesInvoices,
+    ShortRecords,
+    PackageInvoices,
+  ] = await Promise.all([
+    PackageHistory.find().lean(),
+    User.find().lean(),
+    MatchingBonusHistory.find().lean(),
+    PurchasePackageInvoice.find({
+      createdAt: {
+        $gte: moment().subtract(1440, "minutes").toDate(),
+        $lt: moment().toDate(),
+      },
+    }).lean(),
+    ShortRecord.find().lean(),
+    PackageInvoice.find().lean(),
+  ]);
+
+
+
+
+
+
+
+
 
   const findTotalBussiness = (userId, totalBussinessCache) => {
 
