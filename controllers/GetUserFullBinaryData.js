@@ -6,7 +6,7 @@ const ShortRecord = require("../Models/ShortRecord");
 const moment = require("moment");
 const PurchasePackageInvoice = require("../Models/Invoice/PurchasePackageInvoice");
 
-exports.GetBinaryData = async (req, res) => {
+exports.GetUserFullBinaryData = async (req, res) => {
 
     const {_id} = req.body;
 
@@ -27,12 +27,7 @@ exports.GetBinaryData = async (req, res) => {
     PackageHistory.find().lean(),
     User.find().lean(),
     MatchingBonusHistory.find().lean(),
-    PurchasePackageInvoice.find({
-      createdAt: {
-        $gte: moment().subtract(1440, "minutes").toDate(),
-        $lt: moment().toDate(),
-      },
-    }).lean(),
+    PurchasePackageInvoice.find().lean(),
     ShortRecord.find().lean(),
     PackageInvoice.find().lean(),
   ]);
