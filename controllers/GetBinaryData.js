@@ -6,7 +6,7 @@ const ShortRecord = require("../Models/ShortRecord");
 const moment = require("moment");
 const PurchasePackageInvoice = require("../Models/Invoice/PurchasePackageInvoice");
 
-exports.NewMatchingBonus = async (req, res) => {
+exports.GetBinaryData = async (req, res) => {
 
     const {_id} = req.body;
 
