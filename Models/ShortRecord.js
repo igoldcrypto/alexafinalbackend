@@ -42,6 +42,10 @@ const ShortRecord = mongoose.Schema({
         type:"Bool",
         default:true
     },
+    MyWithdrawals: {
+        type: "Number",
+        default: 0,
+      },
 },
 {
   timestamps: true
