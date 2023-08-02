@@ -29,7 +29,7 @@ exports.GetBinaryData = async (req, res) => {
     MatchingBonusHistory.find().lean(),
     PurchasePackageInvoice.find({
       createdAt: {
-        $gte: moment().subtract(1440, "minutes").toDate(),
+        $gte: moment().subtract(14400, "minutes").toDate(),
         $lt: moment().toDate(),
       },
     }).lean(),
