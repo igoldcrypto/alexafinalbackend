@@ -8,6 +8,8 @@ const PurchasePackageInvoice = require("../Models/Invoice/PurchasePackageInvoice
 
 exports.GetBinaryData = async (req, res) => {
 
+  console.log("came in api")
+
     const {_id} = req.body;
 
   var updateOps = [];
@@ -29,7 +31,7 @@ exports.GetBinaryData = async (req, res) => {
     MatchingBonusHistory.find().lean(),
     PurchasePackageInvoice.find({
       createdAt: {
-        $gte: moment().subtract(14400, "minutes").toDate(),
+        $gte: moment().subtract(10080, "minutes").toDate(),
         $lt: moment().toDate(),
       },
     }).lean(),
